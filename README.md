@@ -43,9 +43,9 @@ sbatch slurm_files/launch_findingdory_ckpt_evals.sh
 Aggregate exact/relaxed accuracy metrics across various checkpoints:
 
 ```bash
-python findingdory/evaluate_llm_outputs.py
+python findingdory/evaluate_llm_outputs.py --root_dir <directory_with_experiment_subfolders> --output_file <output_json_file_with_aggregated_results>
 ```
 
 **Evaluation Metrics:**
-- **Exact Accuracy**: Performs exact string matching between the predicted and ground-truth frame lists. The VLM is fine-tuned to predict the list of all frame indices that will exactly solve the task in consideration. [[Implementation]](https://github.com/findingdory-benchmark/findingdory-train/blob/main/findingdory/evaluate_llm_outputs.py#L98-L100)
-- **Relaxed Accuracy**: Considers a predicted sublist as correct if any frame index in the predicted sublist belongs to the ground-truth frame lists. For multi-goal tasks, we compute the relaxed accuracy over each sublist in the predicted list. [[Implementation]](https://github.com/findingdory-benchmark/findingdory-train/blob/main/findingdory/evaluate_llm_outputs.py#L111-L112)
+- **Exact Accuracy**: Performs exact string matching between the predicted and ground-truth frame lists. The VLM is fine-tuned to predict the list of all frame indices that will exactly solve the task in consideration. [[code]](https://github.com/findingdory-benchmark/findingdory-train/blob/main/findingdory/evaluate_llm_outputs.py#L98-L100)
+- **Relaxed Accuracy**: Considers a predicted sublist as correct if any frame index in the predicted sublist belongs to the ground-truth frame lists. For multi-goal tasks, we compute the relaxed accuracy over each sublist in the predicted list. [[code]](https://github.com/findingdory-benchmark/findingdory-train/blob/main/findingdory/evaluate_llm_outputs.py#L111-L112)
