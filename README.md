@@ -1,6 +1,6 @@
 # FindingDory VLM Training
 
-Minimal repository for fine-tuning and evaluating Vision-Language Models (VLMs) on FindingDory dataset.
+Minimal repository for fine-tuning and evaluating Vision-Language Models (VLMs) on [FindingDory](https://findingdory-benchmark.github.io/) dataset.
 
 ## Setup
 
