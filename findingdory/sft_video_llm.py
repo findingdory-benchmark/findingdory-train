@@ -141,7 +141,6 @@ def extract_videos_from_single_process(dataset_name: str, video_cache_dir: str) 
 def prepare_custom_dataset(example: dict[str, Any], use_system_message: bool, video_cache_dir: str) -> dict[str, list[dict[str, Any]]]:
     """Prepare custom dataset example for training (specifically for findingdory dataset)."""
     video_path = example["video"]
-    qa_pairs = json.loads(example["qa"])
 
     # Convert relative path to absolute path using the cache directory
     # video_path is something like "videos/train/ep_id_1157.mp4"
@@ -156,18 +155,16 @@ def prepare_custom_dataset(example: dict[str, Any], use_system_message: bool, vi
     else:
         system_message = ""
 
-    qa_pair = qa_pairs[0]
-
     messages = [
         {"role": "system", "content": [{"type": "text", "text": system_message}]},
         {
             "role": "user",
             "content": [
                 {"type": "video", "video": absolute_video_path, "max_pixels": 360 * 420, "fps": 1.0},
-                {"type": "text", "text": qa_pair["question"]},
+                {"type": "text", "text": example["question"]},
             ],
         },
-        {"role": "assistant", "content": [{"type": "text", "text": qa_pair["answer"]}]},
+        {"role": "assistant", "content": [{"type": "text", "text": example["answer"]}]},
     ]
 
     return {"messages": messages}

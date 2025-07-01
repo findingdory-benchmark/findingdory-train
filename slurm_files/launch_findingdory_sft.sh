@@ -19,7 +19,7 @@ REPO_ROOT_DIR=/srv/flash1/yali30/code/findingdory-release/findingdory-train
 
 export TRANSFORMERS_CACHE=$REPO_ROOT_DIR/models
 export HF_DATASETS_CACHE=$REPO_ROOT_DIR/hf_datasets
-export WANDB_API_KEY=a9a6bebaaf7308fe804d6b7e35bb08bf7970cb19
+export WANDB_API_KEY=
 export TRITON_CACHE_DIR=$REPO_ROOT_DIR/triton_cache
 
 source /coc/testnvme/yali30/miniforge3/etc/profile.d/conda.sh
