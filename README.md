@@ -80,3 +80,15 @@ python findingdory/evaluate_llm_outputs.py --root_dir <directory_with_experiment
 <h4>Relaxed Accuracy</h4>
 <img src="eval_outputs/relaxed_accuracy_plot.png" alt="Relaxed Accuracy Plot" width="420"/>
 </div>
+
+## Citation
+
+If you find our paper and code useful in your research, please consider giving us a star ⭐ and citing our work 📝 :)
+
+```bibtex
+@article{yadav2025findingdory,
+  title={FindingDory: A Benchmark to Evaluate Memory in Embodied Agents},
+  author={Yadav, Karmesh and Ali, Yusuf and Gupta, Gunshi and Gal, Yarin and Kira, Zsolt},
+  journal={arXiv preprint arXiv:2506.15635},
+  year={2025}
+}
