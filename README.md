@@ -1,14 +1,13 @@
 # FindingDory VLM Training
 
+<div align="center">
 <a href="https://arxiv.org/abs/2506.15635" target="_blank">
     <img alt="arXiv" src="https://img.shields.io/badge/arXiv-FindingDory-red?logo=arxiv" height="20" />
 </a>
 <a href="https://findingdory-benchmark.github.io/" target="_blank">
     <img alt="Website" src="https://img.shields.io/badge/🌎_Website-FindingDory-blue.svg" height="20" />
 </a>
-<a href="https://github.com/findingdory-benchmark/findingdory-trl" target="_blank">
-    <img alt="GitHub Code" src="https://img.shields.io/badge/Code-FindingDory--TRL-white?&logo=github&logoColor=white" />
-</a>
+</div>
 
 <div align="center">
 <h1>FindingDory: A Benchmark to Evaluate Memory in Embodied Agents</h1>
@@ -77,8 +76,8 @@ python findingdory/evaluate_llm_outputs.py --root_dir <directory_with_experiment
 
 <div align="center">
 <h4>Exact Accuracy</h4>
-<img src="eval_outputs/exact_accuracy_plot.png" alt="Exact Accuracy Plot" width="600"/>
+<img src="eval_outputs/exact_accuracy_plot.png" alt="Exact Accuracy Plot" width="420"/>
 
 <h4>Relaxed Accuracy</h4>
-<img src="eval_outputs/relaxed_accuracy_plot.png" alt="Relaxed Accuracy Plot" width="600"/>
+<img src="eval_outputs/relaxed_accuracy_plot.png" alt="Relaxed Accuracy Plot" width="420"/>
 </div>
