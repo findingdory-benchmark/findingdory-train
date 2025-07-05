@@ -161,7 +161,8 @@ cd /coc/testnvme/yali30/code/trl
 srun -u python findingdory/evaluate_video_llm.py \
     --checkpoint_dir $CKPT_DIR \
     --model_name_or_path Qwen/Qwen2.5-VL-3B-Instruct \
-    --dataset_name yali30/findingdory-normalized-96-v3-final \
+    --dataset_name yali30/findingdory-subsampled-96 \
+    --video_cache_dir=hf_cache_dir/findingdory-subsampled-96 \
     --bf16 \
     --torch_dtype bfloat16 \
     --output_file $OUTPUT_FILE \

@@ -13,25 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Example usage:
-python evaluate_video_llm.py \
-    --checkpoint_dir=video-llm-output \
-    --dataset_name=yali30/findingdory-val-subsampled-48-qwen \
-    --model_name_or_path=Qwen/Qwen2.5-VL-3B-Instruct \
-    --per_device_eval_batch_size=1 \
-    --bf16 \
-    --torch_dtype=bfloat16 \
-    --max_samples=10 \
-    --output_file=evaluation_results.json
-"""
-
 import argparse
 import json
 import os
 import random
 from dataclasses import dataclass, field
 from typing import Any, Optional
+import zipfile
+import fcntl
+import time
 
 import requests
 import torch
@@ -40,92 +30,104 @@ from datasets import load_dataset
 from peft import PeftModel
 from qwen_vl_utils import process_vision_info
 from transformers import AutoModelForVision2Seq, AutoProcessor
+from huggingface_hub import hf_hub_download
 
 from trl import get_kbit_device_map
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-def download_video(url: str, cache_dir: str) -> str:
-    """Download video if not already present locally."""
-    os.makedirs(cache_dir, exist_ok=True)  # Create cache dir if it doesn't exist
-    filename = url.split("/")[-1]
-    local_path = os.path.join(cache_dir, filename)
-
-    if os.path.exists(local_path):
-        return local_path
-
+def extract_videos_from_single_process(dataset_name: str, video_cache_dir: str) -> str:
+    """Extract videos from dataset zip if not already extracted from main process."""
+    videos_dir = os.path.join(video_cache_dir, "videos")
+    lock_file = os.path.join(video_cache_dir, ".download_lock")
+    expected_zip_path = os.path.join(video_cache_dir, "videos.zip")
+    
+    # Check if videos directory already exists and has content
+    if os.path.exists(videos_dir) and os.listdir(videos_dir):
+        print(f"Videos already extracted at: {videos_dir}")
+        return videos_dir
+    
+    # Use file-based locking for distributed coordination
+    os.makedirs(video_cache_dir, exist_ok=True)
+    
+    # Try to acquire lock (only one process will succeed)
     try:
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            with open(local_path, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-        return local_path
-    except requests.RequestException as e:
-        raise Exception(f"Failed to download video: {e}") from e
+        with open(lock_file, 'w') as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            
+            # Double-check after acquiring lock
+            if os.path.exists(videos_dir) and os.listdir(videos_dir):
+                print(f"Videos already extracted at: {videos_dir}")
+                return videos_dir
+            
+            # Download and extract
+            print("Downloading videos.zip from HuggingFace dataset repository...")
+            zip_path = hf_hub_download(
+                repo_id=dataset_name,
+                filename="videos.zip", 
+                repo_type="dataset",
+                local_dir=video_cache_dir,
+                local_dir_use_symlinks=False
+            )
+            
+            print(f"Extracting videos from {zip_path}...")
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(video_cache_dir)
+            
+            os.remove(zip_path)
+            print(f"Videos extracted successfully to: {videos_dir}")
+            
+            # Count and print extracted videos
+            train_dir = os.path.join(videos_dir, "train")
+            val_dir = os.path.join(videos_dir, "val")
+            
+            train_count = len([f for f in os.listdir(train_dir) if f.endswith('.mp4')]) if os.path.exists(train_dir) else 0
+            val_count = len([f for f in os.listdir(val_dir) if f.endswith('.mp4')]) if os.path.exists(val_dir) else 0
+            
+            print(f"Extraction complete! Total videos - Train: {train_count}, Validation: {val_count}")
+            
+    except (IOError, OSError):
+        # Lock acquisition failed, wait for other process to finish
+        print("Another process is downloading videos, waiting...")
+        while not (os.path.exists(videos_dir) and os.listdir(videos_dir) and not os.path.exists(expected_zip_path)):
+            print(f"Waiting for extraction to complete... (checking videos_dir: {os.path.exists(videos_dir)}, has_content: {os.path.exists(videos_dir) and os.listdir(videos_dir) if os.path.exists(videos_dir) else False}, zip_deleted: {not os.path.exists(expected_zip_path)})")
+            time.sleep(5)
+        print("Videos ready!")
+    
+    return videos_dir
 
+def prepare_custom_dataset(example: dict[str, Any], use_system_message: bool, video_cache_dir: str) -> dict[str, list[dict[str, Any]]]:
+    """Prepare custom dataset example for training (specifically for findingdory dataset)."""
+    video_path = example["video"]
 
-def prepare_custom_dataset(example: dict[str, Any], use_system_message: bool) -> dict[str, list[dict[str, Any]]]:
-    """Prepare custom dataset example for evaluation (specifically for findingdory dataset)."""
-    video_path = example["video_path"]
-    qa_pairs = json.loads(example["qa"])
-    task_id = example["id"].split("_")[-1]
+    # Convert relative path to absolute path using the cache directory
+    # video_path is something like "videos/train/ep_id_1157.mp4"
+    absolute_video_path = os.path.join(video_cache_dir, video_path)
+    
+    # Verify the video file exists
+    if not os.path.exists(absolute_video_path):
+        raise FileNotFoundError(f"Video file not found: {absolute_video_path}")
 
     if use_system_message:
         system_message = "You are an expert and intelligent question answering agent. You will be shown a video that was collected by a robot yesterday while navigating around a house and picking and placing objects. Each frame in the video has a unique frame index in the top left corner of the video along with the time of day information. Your job is to help the robot complete a task today by looking at the video and finding the frame indices that the robot should move to. Note: The robot uses a magic grasp action to pick up an object, where a gripper goes close to the object and the object gets magically picked up. When deciding which frame indices to choose, make sure you choose the frame indices that are closest to the object/place."
     else:
         system_message = ""
-    
-    qa_pair = qa_pairs[0]
 
     messages = [
         {"role": "system", "content": [{"type": "text", "text": system_message}]},
         {
             "role": "user",
             "content": [
-                {"type": "video", "video": video_path, "max_pixels": 360 * 420, "fps": 1.0},
-                {"type": "text", "text": qa_pair["question"]},
+                {"type": "video", "video": absolute_video_path, "max_pixels": 360 * 420, "fps": 1.0},
+                {"type": "text", "text": example["question"]},
             ],
         },
     ]
 
     return {
         "messages": messages,
-        "ground_truth": qa_pair["answer"],
-        "task_id": task_id
-    }
-
-
-def prepare_dataset(example: dict[str, Any], cache_dir: str) -> dict[str, list[dict[str, Any]]]:
-    """Prepare dataset example for evaluation."""
-    video_url = example["video_url"]
-    timecoded_cc = example["timecoded_cc"]
-    qa_pairs = json.loads(example["qa"])
-
-    system_message = "You are an expert in movie narrative analysis."
-    base_prompt = f"""Analyze the video and consider the following timecoded subtitles:
-
-{timecoded_cc}
-
-Based on this information, please answer the following questions:"""
-
-    selected_qa = random.sample(qa_pairs, 1)[0]
-
-    messages = [
-        {"role": "system", "content": [{"type": "text", "text": system_message}]},
-        {
-            "role": "user",
-            "content": [
-                {"type": "video", "video": download_video(video_url, cache_dir), "max_pixels": 360 * 420, "fps": 1.0},
-                {"type": "text", "text": f"{base_prompt}\n\nQuestion: {selected_qa['question']}"},
-            ],
-        },
-    ]
-
-    return {
-        "messages": messages,
-        "ground_truth": selected_qa["answer"]
+        "ground_truth": example["answer"],
+        "task_id": example["task_id"],
     }
 
 
@@ -173,7 +175,6 @@ def main():
     parser.add_argument("--trust_remote_code", action="store_true", help="Trust remote code")
     parser.add_argument("--torch_dtype", type=str, default=None, help="Override torch dtype")
     parser.add_argument("--output_file", type=str, default="evaluation_results.json", help="Output file for results")
-    parser.add_argument("--apply_liger", action="store_true", help="Apply liger kernels to the model")
     parser.add_argument("--split", type=str, default="validation", help="Split to evaluate on")
     parser.add_argument("--use_system_message", type=bool, default=False, help="Use system message")
     
@@ -214,24 +215,6 @@ def main():
         print(f"Error loading checkpoint: {e}")
         print("Falling back to base model...")
         
-    # apply liger kernel patch
-    if args.apply_liger:
-        print("Applying liger kernels to the loaded model !")
-        from liger_kernel.transformers import _apply_liger_kernel_to_instance
-        from transformers.modeling_utils import PreTrainedModel
-        if isinstance(model, PreTrainedModel):
-            # Patch the model with liger kernels. Use the default kernel configurations.
-            _apply_liger_kernel_to_instance(model=model)
-        elif hasattr(model, "get_base_model") and isinstance(model.get_base_model(), PreTrainedModel):
-            # Patch the base model with liger kernels where model is a PeftModel. Use the default kernel configurations.
-            _apply_liger_kernel_to_instance(model=model.get_base_model())
-        else:
-            logger.warning(
-                "The model is not an instance of PreTrainedModel. No liger kernels will be applied."
-            )
-    else:
-        print("Liger Kernels NOT applied to loaded model !")
-        
     # Put model in evaluation mode
     model.eval()
     
@@ -259,15 +242,9 @@ def main():
     
     # Prepare dataset
     print("Preparing dataset for evaluation...")
-    if "findingdory" in args.dataset_name:
-        # karmesh fix to sample 26 examples only for overfit test
-        # allowed_tasks = ["1"]
-        # dataset = dataset.filter(lambda x: x["id"].split('_')[-1] in allowed_tasks and x["id"].split('_')[1][0] == "5" and len(x["id"].split('_')[1]) == 3)
-        print(f"Loading dataset name: {args.dataset_name}")
-        print(f"Using system message: {args.use_system_message}")
-        prepared_examples = [prepare_custom_dataset(example, args.use_system_message) for example in dataset]
-    else:
-        prepared_examples = [prepare_dataset(example, args.video_cache_dir) for example in dataset]
+    print(f"Loading dataset name: {args.dataset_name}")
+    print(f"Using system message: {args.use_system_message}")
+    prepared_examples = [prepare_custom_dataset(example, use_system_message=args.use_system_message, video_cache_dir=args.video_cache_dir) for example in dataset]
     
     # Evaluation loop
     print("Starting evaluation...")
@@ -278,7 +255,6 @@ def main():
         try:
             # Process the input
             messages = example["messages"]
-            # print("Sample: ", example)
             ground_truth = example["ground_truth"]
             task_id = example["task_id"]
             

@@ -12,36 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Example usage:
-accelerate launch \
-    --config_file=deepspeed_zero2.yaml \
-    sft_video_llm.py \
-    --dataset_name=mfarre/simplevideoshorts \
-    --video_cache_dir="/optional/path/to/cache/" \
-    --model_name_or_path=Qwen/Qwen2-VL-7B-Instruct \
-    --per_device_train_batch_size=1 \
-    --output_dir=video-llm-output \
-    --bf16=True \
-    --tf32=True \
-    --gradient_accumulation_steps=4 \
-    --num_train_epochs=4 \
-    --optim="adamw_torch_fused" \
-    --logging_steps=1 \
-    --log_level="debug" \
-    --log_level_replica="debug" \
-    --save_strategy="steps" \
-    --save_steps=300 \
-    --learning_rate=8e-5 \
-    --max_grad_norm=0.3 \
-    --warmup_ratio=0.1 \
-    --lr_scheduler_type="cosine" \
-    --report_to="wandb" \
-    --push_to_hub=False \
-    --torch_dtype=bfloat16 \
-    --gradient_checkpointing=True
-"""
-
 import json
 import os
 import random
@@ -314,8 +284,6 @@ if __name__ == "__main__":
         revision=model_args.model_revision,
         trust_remote_code=model_args.trust_remote_code,
         torch_dtype=torch_dtype,
-        # device_map=get_kbit_device_map(),
-        # quantization_config=get_quantization_config(model_args),
         attn_implementation=model_args.attn_implementation,
         use_cache=False,
     )

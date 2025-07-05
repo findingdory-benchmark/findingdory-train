@@ -1,5 +1,26 @@
 # FindingDory VLM Training
 
+<a href="https://arxiv.org/abs/2506.15635" target="_blank">
+    <img alt="arXiv" src="https://img.shields.io/badge/arXiv-FindingDory-red?logo=arxiv" height="20" />
+</a>
+<a href="https://findingdory-benchmark.github.io/" target="_blank">
+    <img alt="Website" src="https://img.shields.io/badge/🌎_Website-FindingDory-blue.svg" height="20" />
+</a>
+<a href="https://github.com/findingdory-benchmark/findingdory-trl" target="_blank">
+    <img alt="GitHub Code" src="https://img.shields.io/badge/Code-FindingDory--TRL-white?&logo=github&logoColor=white" />
+</a>
+
+<div align="center">
+<h1>FindingDory: A Benchmark to Evaluate Memory in Embodied Agents</h1>
+<p>
+  <a href="https://www.karmeshyadav.com/">Karmesh Yadav*</a>, 
+  <a href="https://yusufali98.github.io/">Yusuf Ali*</a>,
+  <a href="https://gunshigupta.netlify.app/">Gunshi Gupta</a>,
+  <a href="https://www.cs.ox.ac.uk/people/yarin.gal/website/">Yarin Gal</a>,
+  <a href="https://faculty.cc.gatech.edu/~zk15/">Zsolt Kira</a>
+</p>
+</div>
+
 Minimal repository for fine-tuning and evaluating Vision-Language Models (VLMs) on [FindingDory](https://findingdory-benchmark.github.io/) dataset.
 
 ## Setup
@@ -50,4 +71,14 @@ python findingdory/evaluate_llm_outputs.py --root_dir <directory_with_experiment
 - **Exact Accuracy**: Performs exact string matching between the predicted and ground-truth frame lists. The VLM is fine-tuned to predict the list of all frame indices that will exactly solve the task in consideration. [[code]](https://github.com/findingdory-benchmark/findingdory-train/blob/main/findingdory/evaluate_llm_outputs.py#L98-L100)
 - **Relaxed Accuracy**: Considers a predicted sublist as correct if any frame index in the predicted sublist belongs to the ground-truth frame lists. For multi-goal tasks, we compute the relaxed accuracy over each sublist in the predicted list. [[code]](https://github.com/findingdory-benchmark/findingdory-train/blob/main/findingdory/evaluate_llm_outputs.py#L111-L112)
 
-> **Note**: These are offline evaluations on the SFT dataset without simulator in the loop for selecting the best performing checkpoint for downstream simulator evaluations (see Appendix D.5 of [our paper](https://arxiv.org/pdf/2506.15635) for more details). Once the best checkpoint for each frame susampling level is selected via offline evaluations, we run simulator-in-loop evaluations (see Fig.4(a) of paper "Qwen-SFT" baseline). We include the offline eval plots from our trained checkpoints in the [eval_outputs folder](https://github.com/findingdory-benchmark/findingdory-train/tree/main/eval_outputs)
+> **Note**: These are offline evaluations on the SFT dataset without simulator in the loop for selecting the best performing checkpoint for downstream simulator evaluations (see Appendix D.5 of [our paper](https://arxiv.org/pdf/2506.15635) for more details). Once the best checkpoint for each frame susampling level is selected via offline evaluations, we run simulator-in-loop evaluations (see Fig.4(a) of paper "Qwen-SFT" baseline). 
+
+**Offline Evaluation Results:**
+
+<div align="center">
+<h4>Exact Accuracy</h4>
+<img src="eval_outputs/exact_accuracy_plot.png" alt="Exact Accuracy Plot" width="600"/>
+
+<h4>Relaxed Accuracy</h4>
+<img src="eval_outputs/relaxed_accuracy_plot.png" alt="Relaxed Accuracy Plot" width="600"/>
+</div>
