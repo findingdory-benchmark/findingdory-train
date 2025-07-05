@@ -1,9 +1,9 @@
 # FindingDory VLM Training
 
 <div align="center">
-<a href="https://arxiv.org/abs/2506.15635" target="_blank">
+<a href="https://arxiv.org/abs/2506.15635" target="_blank" style="text-decoration: none;">
     <img alt="arXiv" src="https://img.shields.io/badge/arXiv-FindingDory-red?logo=arxiv" height="20" />
-</a><a href="https://findingdory-benchmark.github.io/" target="_blank">
+</a><a href="https://findingdory-benchmark.github.io/" target="_blank" style="text-decoration: none;">
     <img alt="Website" src="https://img.shields.io/badge/🌎_Website-FindingDory-blue.svg" height="20" />
 </a>
 </div>
