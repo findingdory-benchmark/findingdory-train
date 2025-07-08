@@ -1,5 +1,10 @@
+__pycache__/
+findingdory.egg-info/
 trl/
 models/
 hf_datasets/
+hf_cache_dir/
 triton_cache/
 slurm_logs/
+wandb/
+runs/
