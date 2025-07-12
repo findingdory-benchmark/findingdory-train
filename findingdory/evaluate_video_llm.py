@@ -27,7 +27,7 @@ from qwen_vl_utils import process_vision_info
 from transformers import AutoModelForVision2Seq, AutoProcessor
 from trl import get_kbit_device_map
 
-from findingdory.utils import extract_assistant_response, get_system_message
+from findingdory.utils import extract_assistant_response, extract_videos_from_single_process, get_system_message
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
@@ -176,6 +176,7 @@ def main():
     print("Preparing dataset for evaluation...")
     print(f"Loading dataset name: {args.dataset_name}")
     print(f"Using system message: {args.use_system_message}")
+    extract_videos_from_single_process(args.dataset_name, args.video_cache_dir)
     prepared_examples = [
         prepare_custom_dataset(
             example, use_system_message=args.use_system_message, video_cache_dir=args.video_cache_dir
