@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "findingdory"
+version = "0.1.0"
+requires-python = ">=3.9"
+
+dependencies = [
+    "importlib-metadata",
+    "torch==2.6.0+cu124",
+    "torchvision==0.21.0+cu124",
+    "deepspeed==0.16.5",
+    "wandb",
+    "peft",
+    "qwen-vl-utils",
+    "flash_attn==2.6.0.post1",
+    "transformers==4.51.0",
+    "matplotlib",
+    "trl==0.16.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "mypy",
+    "pre-commit",
+]
+
+[tool.setuptools]
+packages = ["findingdory"]
+
+[tool.black]
+line-length = 120
+target-version = ['py39']
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "W503"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true

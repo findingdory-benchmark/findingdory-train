@@ -1,35 +1,21 @@
 #!/bin/bash
 #SBATCH --job-name=mmbench_sft
-#SBATCH --output=/srv/flash1/yali30/code/findingdory-release/findingdory-train/slurm_logs/sft_qwen_train_jun_30/full-ft-96-frames-lr5e6-epoch5-3B-%j.out
-#SBATCH --error=/srv/flash1/yali30/code/findingdory-release/findingdory-train/slurm_logs/sft_qwen_train_jun_30/full-ft-96-frames-lr5e6-epoch5-3B-%j.err
+#SBATCH --output=slurm_logs/qwen2.5-vl-3b-instruct-%j.out
+#SBATCH --error=slurm_logs/qwen2.5-vl-3b-instruct-%j.err
 #SBATCH --gpus=a40:8
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=10
 #SBATCH --ntasks-per-node=8
-#SBATCH --exclude=chomps,ephemeral-3,walle,friday,cyborg,starrysky,hk47,jill,xaea-12,johnny5,calculon,puma
-#SBATCH --qos="short"
-#SBATCH --partition=kira-lab
 #SBATCH --requeue
 #SBATCH --signal=USR1@100
 
 MAIN_ADDR=$(scontrol show hostnames "\${SLURM_JOB_NODELIST}" | head -n 1)
 export MAIN_ADDR
 
-REPO_ROOT_DIR=/srv/flash1/yali30/code/findingdory-release/findingdory-train
-
-export TRANSFORMERS_CACHE=$REPO_ROOT_DIR/models
-export HF_DATASETS_CACHE=$REPO_ROOT_DIR/hf_datasets
-export WANDB_API_KEY=
-export TRITON_CACHE_DIR=$REPO_ROOT_DIR/triton_cache
-
-source /coc/testnvme/yali30/miniforge3/etc/profile.d/conda.sh
-conda deactivate
 conda activate findingdory
 
-cd $REPO_ROOT_DIR/trl
-
-accelerate launch --config_file examples/accelerate_configs/deepspeed_zero3.yaml \
-    $REPO_ROOT_DIR/findingdory/sft_video_llm.py \
+accelerate launch --config_file accelerate_configs/deepspeed_zero3.yaml \
+    findingdory/sft_video_llm.py \
     --dataset_name yali30/findingdory-subsampled-96 \
     --video_cache_dir=hf_cache_dir/findingdory-subsampled-96 \
     --dataset_train_split train \
@@ -44,7 +30,7 @@ accelerate launch --config_file examples/accelerate_configs/deepspeed_zero3.yaml
     --save_steps 200 \
     --report_to wandb \
     --push_to_hub False \
-    --output_dir runs/jun_30/full-ft-96-frames-lr5e6-epoch5-3B \
+    --output_dir runs/full-ft-96-frames-lr5e6-epoch5-3B \
     --optim adamw_torch_fused \
     --learning_rate 5e-6 \
     --max_grad_norm 0.3 \
